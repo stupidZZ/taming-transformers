@@ -3,3 +3,4 @@ logs/
 scripts/*.ipynb
 taming_transformers.egg-info/
 __pycache__
+wandb/

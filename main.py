@@ -12,6 +12,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint, Callback, LearningRateM
 from pytorch_lightning.utilities import rank_zero_only
 
 import wandb
+os.environ["WANDB_API_KEY"] = "9026d75982c1220f3567f7cca9b8d6568296acd9"
+wandb.init(project="tamming")
 from taming.data.utils import custom_collate
 
 
@@ -463,6 +465,7 @@ if __name__ == "__main__":
             # },
         }
         default_logger_cfg = default_logger_cfgs["wandb"]
+        wandb.init(project="tamming")
         logger_cfg = lightning_config.logger or OmegaConf.create()
         logger_cfg = OmegaConf.merge(default_logger_cfg, logger_cfg)
         trainer_kwargs["logger"] = instantiate_from_config(logger_cfg)
