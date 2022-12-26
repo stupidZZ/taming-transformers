@@ -1,5 +1,4 @@
-2021-04-03T19-39-50_cin_transformer.zip
-logs/
+results/
 scripts/*.ipynb
 taming_transformers.egg-info/
 __pycache__
