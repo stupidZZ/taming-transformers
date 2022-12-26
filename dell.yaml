@@ -1,0 +1,66 @@
+description: unified_gen_dis
+
+target:
+  service: amlk8s
+  name: itphyperdellcl1
+  vc: msrhyper
+
+environment:
+  image: ninja0/pytorch:22.05-py3 #zeliu98/pytorch:pytorch1.8.1-py38-cuda11.3-cudnn820-openmpi-mmcv-apex-timm # #zeliu98/pytorch:pytorch1.7.1-py37-cuda10.2-cudnn8-openmpi-mmcv-apex-timm  #amlt-sing/pytorch-1.7.0-cuda11.0-cudnn8-devel  #
+  # registry: docker.io # any public registry can be specified here
+  setup:
+    - pip install pytest transformers --user
+    - pip install einops fvcore --user
+    - pip install --upgrade numpy --user
+    - pip install tensorboardX --user
+    - pip install timm --user
+    - pip install torchmetrics --user
+    - pip install albumentations==0.4.3 --user
+    - pip install opencv-python==4.1.2.30 --user
+    - pip install pudb==2019.2 --user
+    - pip install imageio==2.9.0 --user
+    - pip install imageio-ffmpeg==0.4.2 --user
+    - pip install pytorch-lightning==1.0.8 --user
+    - pip install omegaconf==2.0.0 --user
+    - pip install test-tube>=0.7.5 --user
+    - pip install streamlit>=0.73.1 --user
+    - pip install more-itertools>=8.0.0 --user
+    - pip install transformers==4.3.1 --user
+    - pip install -e . --user
+
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR/
+
+storage:
+  # storage account and container where the ImageNet tar balls are contained
+  output:
+    storage_account_name: zeliuwestus2
+    container_name: aml
+    mount_dir: /aml_output
+  data:
+    storage_account_name: zeliuwestus2
+    container_name: aml
+    mount_dir: /aml_data
+  model:
+    storage_account_name: zeliuwestus2
+    container_name: aml
+    mount_dir: /aml_model
+
+jobs:
+ - name: dell_exp
+   sku: 1xG4
+   priority: High
+   execution_mode: basic
+   azml_int: True
+   process_count_per_node: 1
+   command:
+    - bash train_dell.sh
+   submit_args:
+      container_args:
+         shm_size: 2048g
+      env:
+       {
+         SHARED_MEMORY_PERCENT: 1.0,
+       }
