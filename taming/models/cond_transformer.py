@@ -2,9 +2,12 @@ import os, math
 import torch
 import torch.nn.functional as F
 import pytorch_lightning as pl
+from PIL import Image as pil_image, ImageDraw as pil_img_draw, ImageFont
 
 from main import instantiate_from_config
 from taming.modules.util import SOSProvider
+from taming.data.image_transforms import convert_pil_to_tensor
+from taming.data.conditional_builder.utils import COLOR_PALETTE, WHITE, GRAY_75, BLACK, FULL_CROP
 
 
 def disabled_train(self, mode=True):
@@ -248,6 +251,16 @@ class Net2NetTransformer(pl.LightningModule):
             for i in range(quant_c.shape[0]):
                 log["conditioning"][i] = plotter(quant_c[i], label_for_category_no, figure_size)
             log["conditioning_rec"] = log["conditioning"]
+        elif self.cond_stage_key == "class_label":
+            log["conditioning"] = torch.zeros_like(log["reconstructions"])
+            for i in range(c.shape[0]):
+                figure_size = (x_rec.shape[2], x_rec.shape[3])
+                plot = pil_image.new('RGB', figure_size, WHITE)
+                draw = pil_img_draw.Draw(plot)
+                draw.text((5, 5), c[i].cpu().numpy(), anchor='md', fill=BLACK)
+                log["conditioning"][i] = convert_pil_to_tensor(plot) / 127.5 - 1.
+            log["conditioning_rec"] = log["conditioning"]
+
         elif self.cond_stage_key != "image":
             cond_rec = self.cond_stage_model.decode(quant_c)
             if self.cond_stage_key == "segmentation":

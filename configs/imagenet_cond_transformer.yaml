@@ -49,8 +49,14 @@ data:
     train:
       target: taming.data.imagenet.ImageNetTrain
       params:
-        size: 256
+        root_path: "/data/home/zhez/data/imagenet/"
+        folder_name: "train"
+        config:
+          size: 256
     validation:
       target: taming.data.imagenet.ImageNetValidation
       params:
-        size: 256
+        root_path: "/data/home/zhez/data/imagenet/"
+        folder_name: "val"
+        config:
+          size: 256

@@ -39,10 +39,12 @@ def str_to_indices(string):
 
 
 class ImageNetBase(Dataset):
-    def __init__(self, config=None):
+    def __init__(self, config=None, root_path=None, folder_name=None):
         self.config = config or OmegaConf.create()
         if not type(self.config)==dict:
             self.config = OmegaConf.to_container(self.config)
+        self.root_path = root_path
+        self.folder_name = folder_name
         self._prepare()
         self._prepare_synset_to_human()
         self._prepare_idx_to_synset()
@@ -134,12 +136,14 @@ class ImageNetTrain(ImageNetBase):
     def _prepare(self):
         self.random_crop = retrieve(self.config, "ImageNetTrain/random_crop",
                                     default=True)
-        cachedir = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
-        self.root = os.path.join(cachedir, "autoencoders/data", self.NAME)
-        self.datadir = os.path.join(self.root, "data")
-        self.txt_filelist = os.path.join(self.root, "filelist.txt")
+
+        # cachedir = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
+        # self.root = os.path.join(cachedir, "autoencoders/data", self.NAME)
+        self.root = self.root_path
+        self.datadir = os.path.join(self.root, self.folder_name)
+        self.txt_filelist = os.path.join(self.root, "train_list.txt")
         self.expected_length = 1281167
-        if not bdu.is_prepared(self.root):
+        if not bdu.is_prepared(self.datadir):
             # prep
             print("Preparing dataset {} in {}".format(self.NAME, self.root))
 
@@ -172,7 +176,7 @@ class ImageNetTrain(ImageNetBase):
             with open(self.txt_filelist, "w") as f:
                 f.write(filelist)
 
-            bdu.mark_prepared(self.root)
+            bdu.mark_prepared(self.datadir)
 
 
 class ImageNetValidation(ImageNetBase):
@@ -192,10 +196,11 @@ class ImageNetValidation(ImageNetBase):
     def _prepare(self):
         self.random_crop = retrieve(self.config, "ImageNetValidation/random_crop",
                                     default=False)
-        cachedir = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
-        self.root = os.path.join(cachedir, "autoencoders/data", self.NAME)
-        self.datadir = os.path.join(self.root, "data")
-        self.txt_filelist = os.path.join(self.root, "filelist.txt")
+        # cachedir = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
+        # self.root = os.path.join(cachedir, "autoencoders/data", self.NAME)
+        self.root = self.root_path
+        self.datadir = os.path.join(self.root, self.folder_name)
+        self.txt_filelist = os.path.join(self.root, "val_list.txt")
         self.expected_length = 50000
         if not bdu.is_prepared(self.root):
             # prep

@@ -13,7 +13,6 @@ from pytorch_lightning.utilities import rank_zero_only
 
 import wandb
 os.environ["WANDB_API_KEY"] = "9026d75982c1220f3567f7cca9b8d6568296acd9"
-wandb.init(project="tamming")
 from taming.data.utils import custom_collate
 
 
@@ -189,7 +188,8 @@ class SetupCallback(Callback):
         self.config = config
         self.lightning_config = lightning_config
 
-    def on_pretrain_routine_start(self, trainer, pl_module):
+    def on_fit_start(self, trainer, pl_module):
+    # def on_pretrain_routine_start(self, trainer, pl_module):
         if trainer.global_rank == 0:
             # Create logdirs and save configs
             os.makedirs(self.logdir, exist_ok=True)
@@ -312,7 +312,7 @@ class ImageLogger(Callback):
             return True
         return False
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         self.log_img(pl_module, batch, batch_idx, split="train")
 
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
@@ -363,6 +363,7 @@ if __name__ == "__main__":
     #               key: value
 
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+    # wandb.init(project="tamming")
 
     # add cwd for convenience and to make classes in this file available when
     # running as `python main.py`
@@ -384,7 +385,7 @@ if __name__ == "__main__":
             raise ValueError("Cannot find {}".format(opt.resume))
         if os.path.isfile(opt.resume):
             paths = opt.resume.split("/")
-            idx = len(paths)-paths[::-1].index("logs")+1
+            idx = len(paths)-paths[::-1].index("results")+1
             logdir = "/".join(paths[:idx])
             ckpt = opt.resume
         else:
@@ -396,19 +397,21 @@ if __name__ == "__main__":
         base_configs = sorted(glob.glob(os.path.join(logdir, "configs/*.yaml")))
         opt.base = base_configs+opt.base
         _tmp = logdir.split("/")
-        nowname = _tmp[_tmp.index("logs")+1]
+        nowname = _tmp[_tmp.index("results")+1]
     else:
         if opt.name:
             name = "_"+opt.name
         elif opt.base:
             cfg_fname = os.path.split(opt.base[0])[-1]
             cfg_name = os.path.splitext(cfg_fname)[0]
-            name = "_"+cfg_name
+            name = cfg_name + "_"
         else:
             name = ""
-        nowname = now+name+opt.postfix
-        logdir = os.path.join("logs", nowname)
-
+        # nowname = now+name+opt.postfix
+        nowname = name + now + opt.postfix
+        logdir = os.path.join("results", nowname)
+    
+    wandb.init(project="tamming", name=nowname)
     ckptdir = os.path.join(logdir, "checkpoints")
     cfgdir = os.path.join(logdir, "configs")
     seed_everything(opt.seed)
@@ -487,7 +490,8 @@ if __name__ == "__main__":
 
         modelckpt_cfg = lightning_config.modelcheckpoint or OmegaConf.create()
         modelckpt_cfg = OmegaConf.merge(default_modelckpt_cfg, modelckpt_cfg)
-        trainer_kwargs["checkpoint_callback"] = instantiate_from_config(modelckpt_cfg)
+        trainer_kwargs["callbacks"] = [instantiate_from_config(modelckpt_cfg), ]
+        # trainer_kwargs["checkpoint_callback"] = instantiate_from_config(modelckpt_cfg)
 
         # add callback which sets up log directory
         default_callbacks_cfg = {
@@ -521,7 +525,7 @@ if __name__ == "__main__":
         }
         callbacks_cfg = lightning_config.callbacks or OmegaConf.create()
         callbacks_cfg = OmegaConf.merge(default_callbacks_cfg, callbacks_cfg)
-        trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
+        trainer_kwargs["callbacks"].extend([instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg])
 
         trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)
 
