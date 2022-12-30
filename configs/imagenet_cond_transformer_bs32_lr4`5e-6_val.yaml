@@ -46,13 +46,13 @@ model:
 data:
   target: main.DataModuleFromConfig
   params:
-    batch_size: 2
+    batch_size: 8
     num_workers: 16
     train:
       target: taming.data.imagenet.ImageNetTrain
       params:
-        root_path: "/data/home/zhez/data/imagenet/"
-        # root_path: "./aml_data/imagenet1000/"
+        # root_path: "/data/home/zhez/data/imagenet/"
+        root_path: "./aml_data/imagenet1000/"
         # folder_name: "train"
         folder_name: "val"
         config:
@@ -60,8 +60,8 @@ data:
     validation:
       target: taming.data.imagenet.ImageNetValidation
       params:
-        root_path: "/data/home/zhez/data/imagenet/"
-        # root_path: "./aml_data/imagenet1000/"
+        # root_path: "/data/home/zhez/data/imagenet/"
+        root_path: "./aml_data/imagenet1000/"
         folder_name: "val"
         config:
           size: 256
