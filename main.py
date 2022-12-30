@@ -191,10 +191,17 @@ class SetupCallback(Callback):
     def on_fit_start(self, trainer, pl_module):
     # def on_pretrain_routine_start(self, trainer, pl_module):
         if trainer.global_rank == 0:
-            # Create logdirs and save configs
-            os.makedirs(self.logdir, exist_ok=True)
-            os.makedirs(self.ckptdir, exist_ok=True)
-            os.makedirs(self.cfgdir, exist_ok=True)
+            # Create logdirs and save 
+            try:
+                print("trainer.global_rank:{0} pwd:{1} logdir:{2}".format(trainer.global_rank, os.getcwd(), self.logdir))
+                os.makedirs(self.logdir, exist_ok=True)
+                os.makedirs(self.ckptdir, exist_ok=True)
+                os.makedirs(self.cfgdir, exist_ok=True)
+            except OSError as err:
+                print("Cannot successfully create folder")
+                print(err)
+
+            print("cfg_dir:{0}".format(self.cfgdir))
 
             print("Project config")
             print(self.config.pretty())
@@ -206,20 +213,20 @@ class SetupCallback(Callback):
             OmegaConf.save(OmegaConf.create({"lightning": self.lightning_config}),
                            os.path.join(self.cfgdir, "{}-lightning.yaml".format(self.now)))
 
-        else:
-            # ModelCheckpoint callback created log directory --- remove it
-            if not self.resume and os.path.exists(self.logdir):
-                dst, name = os.path.split(self.logdir)
-                dst = os.path.join(dst, "child_runs", name)
-                os.makedirs(os.path.split(dst)[0], exist_ok=True)
-                try:
-                    os.rename(self.logdir, dst)
-                except FileNotFoundError:
-                    pass
+        # else:
+        #     # ModelCheckpoint callback created log directory --- remove it
+        #     if not self.resume and os.path.exists(self.logdir):
+        #         dst, name = os.path.split(self.logdir)
+        #         dst = os.path.join(dst, "child_runs", name)
+        #         os.makedirs(os.path.split(dst)[0], exist_ok=True)
+        #         try:
+        #             os.rename(self.logdir, dst)
+        #         except FileNotFoundError:
+        #             pass
 
 
 class ImageLogger(Callback):
-    def __init__(self, batch_frequency, max_images, clamp=True, increase_log_steps=True):
+    def __init__(self, batch_frequency, max_images, clamp=True):
         super().__init__()
         self.batch_freq = batch_frequency
         self.max_images = max_images
@@ -227,9 +234,9 @@ class ImageLogger(Callback):
             pl.loggers.WandbLogger: self._wandb,
             # pl.loggers.TestTubeLogger: self._testtube,
         }
-        self.log_steps = [2 ** n for n in range(int(np.log2(self.batch_freq)) + 1)]
-        if not increase_log_steps:
-            self.log_steps = [self.batch_freq]
+        # self.log_steps = [2 ** n for n in range(int(np.log2(self.batch_freq)) + 1)]
+        # if not increase_log_steps:
+        #     self.log_steps = [self.batch_freq]
         self.clamp = clamp
 
     @rank_zero_only
@@ -273,10 +280,12 @@ class ImageLogger(Callback):
             Image.fromarray(grid).save(path)
 
     def log_img(self, pl_module, batch, batch_idx, split="train"):
-        if (self.check_frequency(batch_idx) and  # batch_idx % self.batch_freq == 0
+        check_flag = (self.check_frequency(batch_idx) and  # batch_idx % self.batch_freq == 0
                 hasattr(pl_module, "log_images") and
                 callable(pl_module.log_images) and
-                self.max_images > 0):
+                self.max_images > 0)
+
+        if check_flag:
             logger = type(pl_module.logger)
 
             is_train = pl_module.training
@@ -304,13 +313,8 @@ class ImageLogger(Callback):
                 pl_module.train()
 
     def check_frequency(self, batch_idx):
-        if (batch_idx % self.batch_freq) == 0 or (batch_idx in self.log_steps):
-            try:
-                self.log_steps.pop(0)
-            except IndexError:
-                pass
-            return True
-        return False
+        return (batch_idx % self.batch_freq) == 0
+
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         self.log_img(pl_module, batch, batch_idx, split="train")
@@ -435,6 +439,8 @@ if __name__ == "__main__":
             gpuinfo = trainer_config["gpus"]
             print(f"Running on GPUs {gpuinfo}")
             cpu = False
+
+        trainer_config["max_epochs"] = config.model["max_epochs"]
         trainer_opt = argparse.Namespace(**trainer_config)
         lightning_config.trainer = trainer_config
 
@@ -549,6 +555,8 @@ if __name__ == "__main__":
         model.learning_rate = accumulate_grad_batches * ngpu * bs * base_lr
         print("Setting learning rate to {:.2e} = {} (accumulate_grad_batches) * {} (num_gpus) * {} (batchsize) * {:.2e} (base_lr)".format(
             model.learning_rate, accumulate_grad_batches, ngpu, bs, base_lr))
+        model.max_epochs = config.model.max_epochs
+        model.lr_steps = config.model.lr_steps
 
         # allow checkpointing via USR1
         def melk(*args, **kwargs):

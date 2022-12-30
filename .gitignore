@@ -3,3 +3,5 @@ scripts/*.ipynb
 taming_transformers.egg-info/
 __pycache__
 wandb/
+aml_data/
+.vscode/

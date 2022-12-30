@@ -9,6 +9,9 @@ environment:
   image: ninja0/pytorch:22.05-py3 #zeliu98/pytorch:pytorch1.8.1-py38-cuda11.3-cudnn820-openmpi-mmcv-apex-timm # #zeliu98/pytorch:pytorch1.7.1-py37-cuda10.2-cudnn8-openmpi-mmcv-apex-timm  #amlt-sing/pytorch-1.7.0-cuda11.0-cudnn8-devel  #
   # registry: docker.io # any public registry can be specified here
   setup:
+    - sudo apt-get install libsm6 -y
+    - sudo apt-get install libxext6  -y
+    - sudo apt-get install libxrender-dev  -y
     - pip install pytest transformers --user
     - pip install einops fvcore --user
     - pip install --upgrade numpy --user
@@ -20,12 +23,13 @@ environment:
     - pip install pudb==2019.2 --user
     - pip install imageio==2.9.0 --user
     - pip install imageio-ffmpeg==0.4.2 --user
-    - pip install pytorch-lightning==1.0.8 --user
+    - pip install pytorch-lightning --user
     - pip install omegaconf==2.0.0 --user
     - pip install test-tube>=0.7.5 --user
     - pip install streamlit>=0.73.1 --user
     - pip install more-itertools>=8.0.0 --user
     - pip install transformers==4.3.1 --user
+    - pip install wandb --user
     - pip install -e . --user
 
 code:

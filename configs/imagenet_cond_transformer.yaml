@@ -1,5 +1,7 @@
 model:
-  base_learning_rate: 0.0625
+  base_learning_rate: 4.5e-06
+  max_epochs: 100
+  lr_steps: [75, 95]
   target: taming.models.cond_transformer.Net2NetTransformer
   params:
     first_stage_key: image
@@ -45,18 +47,30 @@ data:
   target: main.DataModuleFromConfig
   params:
     batch_size: 2
-    num_workers: 8
+    num_workers: 16
     train:
       target: taming.data.imagenet.ImageNetTrain
       params:
         root_path: "/data/home/zhez/data/imagenet/"
-        folder_name: "train"
+        # root_path: "./aml_data/imagenet1000/"
+        # folder_name: "train"
+        folder_name: "val"
         config:
           size: 256
     validation:
       target: taming.data.imagenet.ImageNetValidation
       params:
         root_path: "/data/home/zhez/data/imagenet/"
+        # root_path: "./aml_data/imagenet1000/"
         folder_name: "val"
         config:
           size: 256
+image_logger:
+  target: main.ImageLogger
+  params:
+    batch_frequency: 1000
+    max_images: 4
+    clamp: True
+lightning:
+  trainer:
+    gpus: 0,1,2,3

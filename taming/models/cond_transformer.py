@@ -2,6 +2,7 @@ import os, math
 import torch
 import torch.nn.functional as F
 import pytorch_lightning as pl
+from torch.optim.lr_scheduler import MultiStepLR
 from PIL import Image as pil_image, ImageDraw as pil_img_draw, ImageFont
 
 from main import instantiate_from_config
@@ -199,9 +200,9 @@ class Net2NetTransformer(pl.LightningModule):
 
         N = 4
         if lr_interface:
-            x, c = self.get_xc(batch, N, diffuse=False, upsample_factor=8)
+            x, c, class_name = self.get_xc(batch, N, diffuse=False, upsample_factor=8, for_vis=True)
         else:
-            x, c = self.get_xc(batch, N)
+            x, c, class_name = self.get_xc(batch, N, for_vis=True)
         x = x.to(device=self.device)
         c = c.to(device=self.device)
 
@@ -252,15 +253,17 @@ class Net2NetTransformer(pl.LightningModule):
                 log["conditioning"][i] = plotter(quant_c[i], label_for_category_no, figure_size)
             log["conditioning_rec"] = log["conditioning"]
         elif self.cond_stage_key == "class_label":
-            log["conditioning"] = torch.zeros_like(log["reconstructions"])
-            for i in range(c.shape[0]):
-                figure_size = (x_rec.shape[2], x_rec.shape[3])
-                plot = pil_image.new('RGB', figure_size, WHITE)
-                draw = pil_img_draw.Draw(plot)
-                draw.text((5, 5), c[i].cpu().numpy(), anchor='md', fill=BLACK)
-                log["conditioning"][i] = convert_pil_to_tensor(plot) / 127.5 - 1.
-            log["conditioning_rec"] = log["conditioning"]
-
+            # figure_width = 90
+            # figure_height = 30
+            # log["conditioning"] = torch.zeros((log["reconstructions"].shape[0], 3, figure_height, figure_width))
+            # for i in range(c.shape[0]):
+            #     plot = pil_image.new('RGB', (figure_width, figure_height), WHITE)
+            #     draw = pil_img_draw.Draw(plot)
+            #     font = ImageFont.truetype("arial.ttf", size=15)
+            #     draw.text((10, 10), class_name[i], anchor='md', fill=BLACK, font=font)
+            #     log["conditioning"][i] = convert_pil_to_tensor(plot) / 127.5 - 1.
+            # log["conditioning_rec"] = log["conditioning"]
+            pass
         elif self.cond_stage_key != "image":
             cond_rec = self.cond_stage_model.decode(quant_c)
             if self.cond_stage_key == "segmentation":
@@ -294,13 +297,21 @@ class Net2NetTransformer(pl.LightningModule):
             x = x.float()
         return x
 
-    def get_xc(self, batch, N=None):
+    def get_xc(self, batch, N=None, for_vis=False):
         x = self.get_input(self.first_stage_key, batch)
         c = self.get_input(self.cond_stage_key, batch)
+
         if N is not None:
             x = x[:N]
             c = c[:N]
-        return x, c
+
+        if for_vis:
+            class_name = None
+            if self.cond_stage_key == 'class_label':
+                class_name = batch['human_label']
+            return x, c, class_name
+        else:
+            return x, c
 
     def shared_step(self, batch, batch_idx):
         x, c = self.get_xc(batch)
@@ -362,4 +373,8 @@ class Net2NetTransformer(pl.LightningModule):
             {"params": [param_dict[pn] for pn in sorted(list(no_decay))], "weight_decay": 0.0},
         ]
         optimizer = torch.optim.AdamW(optim_groups, lr=self.learning_rate, betas=(0.9, 0.95))
-        return optimizer
+
+        scheduler = {'scheduler': MultiStepLR(optimizer, milestones=self.lr_steps, gamma=0.1),
+                     'interval': 'epoch'}
+
+        return {"optimizer": optimizer, "lr_scheduler": scheduler}
