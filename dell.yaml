@@ -53,14 +53,14 @@ storage:
     mount_dir: /aml_model
 
 jobs:
- - name: dell_exp
+ - name: imagenet_nocond_transformer_bs32_lr4d5e-6_val
    sku: 1xG4
    priority: High
    execution_mode: basic
    azml_int: True
    process_count_per_node: 1
    command:
-    - bash train_dell.sh
+    - bash train_dell.sh configs/imagenet_nocond_transformer_bs32_lr4d5e-6_val.yaml
    submit_args:
       container_args:
          shm_size: 2048g

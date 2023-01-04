@@ -326,7 +326,7 @@ class Net2NetTransformer(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         loss = self.shared_step(batch, batch_idx)
-        self.log("val/loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        self.log("val/loss", loss, prog_bar=True, logger=True, on_step=False, on_epoch=True)
         return loss
 
     def configure_optimizers(self):

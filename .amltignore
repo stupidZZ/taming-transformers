@@ -5,3 +5,4 @@ __pycache__
 wandb/
 aml_data/
 .vscode/
+assert/
