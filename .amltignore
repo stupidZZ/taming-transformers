@@ -6,3 +6,6 @@ wandb/
 aml_data/
 .vscode/
 assert/
+amlt/
+assets/
+datas/

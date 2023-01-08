@@ -439,8 +439,10 @@ if __name__ == "__main__":
             gpuinfo = trainer_config["gpus"]
             print(f"Running on GPUs {gpuinfo}")
             cpu = False
-
+        trainer_config['strategy'] = "ddp"
+        trainer_config['accelerator'] = "gpu"
         trainer_config["max_epochs"] = config.model["max_epochs"]
+        trainer_config["num_nodes"] = int(os.environ['NUM_NODES'])
         trainer_opt = argparse.Namespace(**trainer_config)
         lightning_config.trainer = trainer_config
 
