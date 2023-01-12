@@ -443,7 +443,7 @@ if __name__ == "__main__":
         trainer_config['strategy'] = "ddp"
         trainer_config['accelerator'] = "gpu"
         trainer_config["max_epochs"] = config.model["max_epochs"]
-        trainer_config["num_nodes"] = int(os.environ['WORLD_SIZE'])
+        trainer_config["num_nodes"] = int(os.environ['AZUREML_NODE_COUNT'])
         trainer_opt = argparse.Namespace(**trainer_config)
         lightning_config.trainer = trainer_config
 
