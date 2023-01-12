@@ -10,6 +10,8 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning.trainer import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, Callback, LearningRateMonitor
 from pytorch_lightning.utilities import rank_zero_only
+from pytorch_lightning.plugins.environments import ClusterEnvironment
+
 
 import wandb
 os.environ["WANDB_API_KEY"] = "9026d75982c1220f3567f7cca9b8d6568296acd9"
@@ -323,7 +325,6 @@ class ImageLogger(Callback):
         self.log_img(pl_module, batch, batch_idx, split="val")
 
 
-
 if __name__ == "__main__":
     # custom parser to specify config files, train, test and debug mode,
     # postfix, resume.
@@ -534,7 +535,6 @@ if __name__ == "__main__":
         callbacks_cfg = lightning_config.callbacks or OmegaConf.create()
         callbacks_cfg = OmegaConf.merge(default_callbacks_cfg, callbacks_cfg)
         trainer_kwargs["callbacks"].extend([instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg])
-
         trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)
 
         # data
