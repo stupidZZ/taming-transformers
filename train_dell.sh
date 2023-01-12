@@ -10,9 +10,4 @@ ln -s /aml_data/amldata/ aml_data
 # python main.py --base $CONFIG_NAME -t True --no-test
 
 
-python -m torch.distributed.run \
-    --nnodes=$WORLD_SIZE \
-    --master_addr $MASTER_ADDR \
-    --master_port $MASTER_PORT \
-    --node_rank $RANK \
-    main.py --base $CONFIG_NAME -t True --no-test
+python -m torch.distributed.run --nnodes=$WORLD_SIZE --master_addr $MASTER_ADDR --master_port $MASTER_PORT --node_rank $RANK main.py --base $CONFIG_NAME -t True --no-test
